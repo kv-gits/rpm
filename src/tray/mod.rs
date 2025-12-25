@@ -1,4 +1,4 @@
-use crate::errors::{RpmError, RpmResult};
+use crate::errors::RpmResult;
 
 #[derive(Clone)]
 pub struct TrayHandle {
@@ -6,7 +6,7 @@ pub struct TrayHandle {
 }
 
 pub struct TrayManager {
-    handle: TrayHandle,
+    pub handle: TrayHandle,
 }
 
 impl TrayManager {

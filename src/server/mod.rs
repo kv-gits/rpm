@@ -1,5 +1,4 @@
 use crate::crypto::CryptoManager;
-use crate::db::Database;
 use crate::errors::RpmResult;
 use crate::models::{AuthRequest, AuthResponse, CreatePasswordRequest};
 use axum::{
@@ -11,15 +10,19 @@ use axum::{
 };
 use chrono::{Duration, Utc};
 use std::sync::Arc;
+use tokio::sync::watch;
 use tower_http::cors::{Any, CorsLayer};
 
 pub struct AppState {
-    pub db: Database,
     pub crypto: CryptoManager,
 }
 
-pub async fn start_server(port: u16, db: Database, crypto: CryptoManager) -> RpmResult<()> {
-    let state = Arc::new(AppState { db, crypto });
+pub async fn start_server(
+    port: u16,
+    crypto: CryptoManager,
+    mut shutdown_rx: watch::Receiver<()>,
+) -> RpmResult<()> {
+    let state = Arc::new(AppState { crypto });
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -35,7 +38,17 @@ pub async fn start_server(port: u16, db: Database, crypto: CryptoManager) -> Rpm
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
-    axum::serve(listener, app).await?;
+    
+    // Create shutdown signal from watch channel
+    // Wait for shutdown signal to be sent
+    let shutdown = async move {
+        let _ = shutdown_rx.changed().await;
+    };
+
+    // Start server with graceful shutdown
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown)
+        .await?;
 
     Ok(())
 }
@@ -49,7 +62,7 @@ async fn health_check() -> Json<serde_json::Value> {
 
 async fn authenticate(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<AuthRequest>,
+    Json(_payload): Json<AuthRequest>,
 ) -> Result<Json<AuthResponse>, StatusCode> {
     // TODO: Verify master password
     // TODO: Generate JWT token
@@ -65,8 +78,8 @@ async fn authenticate(
 }
 
 async fn create_password(
-    State(state): State<Arc<AppState>>,
-    Json(payload): Json<CreatePasswordRequest>,
+    State(_state): State<Arc<AppState>>,
+    Json(_payload): Json<CreatePasswordRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     // TODO: Implement password creation
     Err(StatusCode::NOT_IMPLEMENTED)

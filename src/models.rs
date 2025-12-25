@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PasswordEntry {
     pub id: Uuid,
     pub title: String,
@@ -66,5 +66,23 @@ pub struct AuthRequest {
 pub struct AuthResponse {
     pub token: String,
     pub expires_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DefFileEntry {
+    pub encrypted_filename: String, // UUID filename
+    pub encrypted_name: String,      // Base64 encoded encrypted name
+    pub nonce: String,               // Base64 encoded nonce
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DefFile {
+    pub entries: Vec<DefFileEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PasswordFile {
+    pub encrypted_password: String, // Base64 encoded encrypted password
+    pub nonce: String,              // Base64 encoded nonce
 }
 

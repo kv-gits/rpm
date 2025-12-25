@@ -5,12 +5,9 @@ use aes_gcm::{
 };
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use argon2::password_hash::{rand_core::OsRng as ArgonOsRng, SaltString};
-use std::sync::Arc;
-use zeroize::{Zeroize, ZeroizeOnDrop};
+use zeroize::Zeroize;
 
 pub mod key_derivation;
-
-pub use key_derivation::derive_key;
 
 #[derive(Clone)]
 pub struct CryptoManager {
@@ -85,9 +82,42 @@ impl CryptoManager {
         rand::thread_rng().fill_bytes(&mut bytes);
         Ok(hex::encode(bytes))
     }
+
+    /// Encrypt arbitrary data using AES-256-GCM
+    pub fn encrypt_data(&self, data: &[u8], key: &[u8]) -> RpmResult<(Vec<u8>, Vec<u8>)> {
+        if key.len() != 32 {
+            return Err(RpmError::Crypto("Key must be 32 bytes for AES-256".to_string()));
+        }
+
+        let cipher_key = Key::<Aes256Gcm>::from_slice(key);
+        let cipher = Aes256Gcm::new(cipher_key);
+        let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
+
+        let ciphertext = cipher
+            .encrypt(&nonce, data)
+            .map_err(|e| RpmError::Crypto(format!("Encryption failed: {}", e)))?;
+
+        Ok((ciphertext, nonce.to_vec()))
+    }
+
+    /// Decrypt arbitrary data using AES-256-GCM
+    pub fn decrypt_data(&self, ciphertext: &[u8], nonce: &[u8], key: &[u8]) -> RpmResult<Vec<u8>> {
+        if key.len() != 32 {
+            return Err(RpmError::Crypto("Key must be 32 bytes for AES-256".to_string()));
+        }
+
+        let cipher_key = Key::<Aes256Gcm>::from_slice(key);
+        let cipher = Aes256Gcm::new(cipher_key);
+        let nonce = Nonce::from_slice(nonce);
+
+        let plaintext = cipher
+            .decrypt(nonce, ciphertext)
+            .map_err(|e| RpmError::Crypto(format!("Decryption failed: {}", e)))?;
+
+        Ok(plaintext)
+    }
 }
 
-#[derive(ZeroizeOnDrop)]
 pub struct SecureKey {
     key: Vec<u8>,
 }
@@ -102,9 +132,15 @@ impl SecureKey {
     }
 }
 
+impl Zeroize for SecureKey {
+    fn zeroize(&mut self) {
+        self.key.zeroize();
+    }
+}
+
 impl Drop for SecureKey {
     fn drop(&mut self) {
-        self.key.zeroize();
+        self.zeroize();
     }
 }
 

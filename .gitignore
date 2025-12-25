@@ -2,11 +2,11 @@
 /target/
 **/*.rs.bk
 *.pdb
-Cargo.lock
 
 # IDE
 .idea/
 .vscode/
+.cursorrules
 *.swp
 *.swo
 *~
@@ -25,4 +25,8 @@ config.toml
 # Build artifacts
 dist/
 build/
+
+
+.aider*
+
 

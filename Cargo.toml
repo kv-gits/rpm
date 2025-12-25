@@ -4,17 +4,15 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Your Name <you@example.com>"]
 description = "Secure password manager with TUI, system tray, and browser extensions"
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0"
 
 [dependencies]
 # TUI
 ratatui = "0.27"
 crossterm = "0.28"
-tui-input = "0.8"
 
 # System tray
 system-tray = "0.1"
-tauri-tray = "0.1"
 # Alternative: tray-item = "0.1"
 
 # Async runtime
@@ -36,16 +34,15 @@ argon2 = "0.5"
 chacha20poly1305 = "0.10"
 # RSA for asymmetric encryption
 rsa = "0.9"
-# X25519 for key exchange
-x25519-dalek = "2.1"
+# X25519 for key exchange (pre-release version, will be updated when stable 2.x is available)
+x25519-dalek = "3.0.0-pre.3"
 # Ed25519 for signatures
-ed25519-dalek = "2.1"
+ed25519-dalek = "2.1.1"
 # Random number generation
 rand = "0.8"
 rand_core = "0.6"
 
-# Database for storing encrypted passwords
-sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "sqlite"] }
+# Database removed - storage will be implemented later
 
 # Error handling
 anyhow = "1.0"
@@ -65,10 +62,14 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 hex = "0.4"
 base64 = "0.22"
+fuzzy-matcher = "0.3"
 
 
 # Secure memory
 zeroize = "1.7"
+
+# Clipboard
+arboard = "3.2"
 
 [dev-dependencies]
 tokio-test = "0.4"
